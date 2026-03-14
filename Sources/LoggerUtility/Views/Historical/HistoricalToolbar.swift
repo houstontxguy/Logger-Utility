@@ -9,10 +9,10 @@ struct HistoricalToolbar: View {
         HStack(spacing: 12) {
             // Quick duration buttons
             Group {
-                Button("5m") { viewModel.applyLastDuration(minutes: 5) }
-                Button("15m") { viewModel.applyLastDuration(minutes: 15) }
-                Button("1h") { viewModel.applyLastDuration(minutes: 60) }
-                Button("24h") { viewModel.applyLastDuration(minutes: 1440) }
+                Button("5m") { viewModel.applyLastDuration(minutes: 5); viewModel.query() }
+                Button("15m") { viewModel.applyLastDuration(minutes: 15); viewModel.query() }
+                Button("1h") { viewModel.applyLastDuration(minutes: 60); viewModel.query() }
+                Button("24h") { viewModel.applyLastDuration(minutes: 1440); viewModel.query() }
             }
             .buttonStyle(.bordered)
 
@@ -66,5 +66,6 @@ struct HistoricalToolbar: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }

@@ -56,5 +56,6 @@ struct StreamToolbar: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }

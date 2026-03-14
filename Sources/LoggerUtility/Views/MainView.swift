@@ -5,15 +5,15 @@ struct MainView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            StreamView()
-                .tabItem {
-                    Label("Stream", systemImage: "waveform")
-                }
-                .tag(0)
-
             HistoricalView()
                 .tabItem {
                     Label("Historical", systemImage: "clock")
+                }
+                .tag(0)
+
+            StreamView()
+                .tabItem {
+                    Label("Stream", systemImage: "waveform")
                 }
                 .tag(1)
         }

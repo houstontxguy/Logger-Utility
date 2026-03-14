@@ -42,6 +42,7 @@ extension Process {
 
             // Safety cap: discard buffer if a single line exceeds limit
             if stdoutBuffer.count > maxLineBufferSize {
+                onError?("Line buffer exceeded \(maxLineBufferSize) bytes, discarding")
                 stdoutBuffer.removeAll(keepingCapacity: true)
                 return
             }

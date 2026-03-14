@@ -6,7 +6,9 @@ enum ExportService {
         defer { handle.closeFile() }
 
         let header = "Timestamp,Level,Process,PID,Subsystem,Category,Sender,Message\n"
-        handle.write(header.data(using: .utf8)!)
+        if let headerData = header.data(using: .utf8) {
+            handle.write(headerData)
+        }
 
         for entry in entries {
             let line = [

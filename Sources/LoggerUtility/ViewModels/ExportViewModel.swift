@@ -11,6 +11,8 @@ final class ExportViewModel: ObservableObject {
     private let collectService = LogCollectService()
 
     func export(entries: [LogEntry]) {
+        guard !isExporting else { return }
+
         let panel = NSSavePanel()
         panel.allowedContentTypes = []
         panel.nameFieldStringValue = "logs.\(selectedFormat.fileExtension)"
@@ -26,7 +28,11 @@ final class ExportViewModel: ObservableObject {
 
         Task { @MainActor in
             do {
-                FileManager.default.createFile(atPath: url.path, contents: nil)
+                if !FileManager.default.createFile(atPath: url.path, contents: nil) {
+                    errorMessage = "Could not create file at \(url.lastPathComponent)"
+                    isExporting = false
+                    return
+                }
 
                 switch format {
                 case .csv:

@@ -16,11 +16,13 @@ final class StreamViewModel: ObservableObject {
     @Published var discoveredSubsystems: [(name: String, count: Int)] = []
 
     private var subsystemCounts: [String: Int] = [:]
+    private var subsystemsDirty = false
     private let streamService = LogStreamService()
     private var ringBuffer = RingBuffer<LogEntry>(capacity: Constants.defaultStreamBufferCapacity)
     private var cancellables = Set<AnyCancellable>()
     private var rateCounter = 0
     private var rateTimer: Timer?
+    private var searchDebounce: AnyCancellable?
 
     init() {
         streamService.entryPublisher
@@ -37,10 +39,17 @@ final class StreamViewModel: ObservableObject {
         streamService.$errorMessage
             .receive(on: DispatchQueue.main)
             .assign(to: &$errorMessage)
+
+        searchDebounce = $searchText
+            .debounce(for: .seconds(Constants.searchDebounceInterval), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.rebuildFilteredEntries()
+            }
     }
 
     deinit {
         rateTimer?.invalidate()
+        searchDebounce?.cancel()
     }
 
     func start() {
@@ -53,6 +62,7 @@ final class StreamViewModel: ObservableObject {
         selectedEntry = nil
         subsystemCounts = [:]
         discoveredSubsystems = []
+        subsystemsDirty = false
 
         startRateTimer()
         streamService.start(filter: filter)
@@ -86,12 +96,8 @@ final class StreamViewModel: ObservableObject {
 
         for entry in batch where !entry.subsystem.isEmpty {
             subsystemCounts[entry.subsystem, default: 0] += 1
+            subsystemsDirty = true
         }
-        // Rebuild subsystem list every 5 seconds worth of batches (throttled via rate timer)
-        // or just keep it in sync — it's a dictionary sort, cheap enough
-        discoveredSubsystems = subsystemCounts
-            .sorted { $0.value > $1.value }
-            .map { (name: $0.key, count: $0.value) }
 
         if !isPaused {
             rebuildFilteredEntries()
@@ -126,6 +132,14 @@ final class StreamViewModel: ObservableObject {
                 guard let self = self else { return }
                 self.entriesPerSecond = Double(self.rateCounter)
                 self.rateCounter = 0
+
+                // Rebuild subsystem list on the 1s rate timer instead of every 100ms batch
+                if self.subsystemsDirty {
+                    self.subsystemsDirty = false
+                    self.discoveredSubsystems = self.subsystemCounts
+                        .sorted { $0.value > $1.value }
+                        .map { (name: $0.key, count: $0.value) }
+                }
             }
         }
     }

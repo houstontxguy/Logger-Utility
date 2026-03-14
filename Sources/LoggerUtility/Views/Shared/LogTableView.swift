@@ -180,13 +180,16 @@ struct LogTableView: NSViewRepresentable {
 
         @objc func askAIAboutEntry(_ sender: Any?) {
             guard let entry = entryForMenu() else { return }
-            let provider = AIProvider(rawValue: UserDefaults.standard.string(forKey: "preferredAIProvider") ?? "") ?? .chatgpt
-            AIPromptService.askAI(about: entry, using: provider)
+            Task { @MainActor in
+                AIPromptService.askAI(about: entry, using: AIPromptService.preferredProvider)
+            }
         }
 
         @objc func copyAIPrompt(_ sender: Any?) {
             guard let entry = entryForMenu() else { return }
-            AIPromptService.copyPromptToClipboard(for: entry)
+            Task { @MainActor in
+                AIPromptService.copyPromptToClipboard(for: entry)
+            }
         }
 
         @objc func copyMessage(_ sender: Any?) {

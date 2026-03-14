@@ -2,8 +2,8 @@ import SwiftUI
 
 struct LogDetailView: View {
     let entry: LogEntry?
-    @AppStorage("preferredAIProvider") private var preferredProvider: AIProvider = .chatgpt
     @State private var showCopiedFeedback = false
+    @State private var feedbackTask: Task<Void, Never>?
 
     var body: some View {
         Group {
@@ -15,17 +15,17 @@ struct LogDetailView: View {
                             Menu {
                                 ForEach(AIProvider.allCases) { provider in
                                     Button(provider.rawValue) {
-                                        preferredProvider = provider
+                                        AIPromptService.preferredProvider = provider
                                         AIPromptService.askAI(about: entry, using: provider)
                                     }
                                 }
                             } label: {
-                                Label("Ask AI (\(preferredProvider.rawValue))", systemImage: "brain")
+                                Label("Ask AI (\(AIPromptService.preferredProvider.rawValue))", systemImage: "brain")
                             }
                             .menuStyle(.borderedButton)
 
                             Button {
-                                AIPromptService.askAI(about: entry, using: preferredProvider)
+                                AIPromptService.askAI(about: entry, using: AIPromptService.preferredProvider)
                             } label: {
                                 Label("Open", systemImage: "arrow.up.right.square")
                             }
@@ -33,8 +33,12 @@ struct LogDetailView: View {
                             Button {
                                 AIPromptService.copyPromptToClipboard(for: entry)
                                 showCopiedFeedback = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                    showCopiedFeedback = false
+                                feedbackTask?.cancel()
+                                feedbackTask = Task {
+                                    try? await Task.sleep(nanoseconds: 1_500_000_000)
+                                    if !Task.isCancelled {
+                                        showCopiedFeedback = false
+                                    }
                                 }
                             } label: {
                                 Label(showCopiedFeedback ? "Copied!" : "Copy Prompt", systemImage: showCopiedFeedback ? "checkmark" : "doc.on.doc")
@@ -76,6 +80,9 @@ struct LogDetailView: View {
             }
         }
         .frame(minWidth: 250)
+        .onDisappear {
+            feedbackTask?.cancel()
+        }
     }
 
     private func detailRow(_ label: String, _ value: String, color: Color? = nil) -> some View {

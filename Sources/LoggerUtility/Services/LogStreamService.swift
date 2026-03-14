@@ -71,6 +71,7 @@ final class LogStreamService: ObservableObject {
     func stop() {
         batchTimer?.invalidate()
         batchTimer = nil
+        flushBatch()
         if let process = process, process.isRunning {
             process.terminate()
         }

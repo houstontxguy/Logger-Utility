@@ -1,11 +1,21 @@
 import Foundation
 import AppKit
 
+@MainActor
 enum AIPromptService {
     private static let macOSVersion: String = {
         let version = ProcessInfo.processInfo.operatingSystemVersion
         return "\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
     }()
+
+    static var preferredProvider: AIProvider {
+        get {
+            AIProvider(rawValue: UserDefaults.standard.string(forKey: "preferredAIProvider") ?? "") ?? .chatgpt
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: "preferredAIProvider")
+        }
+    }
 
     static func buildPrompt(for entry: LogEntry) -> String {
         var lines: [String] = []

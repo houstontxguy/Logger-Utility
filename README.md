@@ -110,6 +110,31 @@ Right-click any log entry and choose **Ask AI About This...** to get help unders
 
 You can also use the **Ask AI** buttons in the detail inspector panel, or press **Cmd+Shift+A**. Your preferred AI provider is remembered between sessions.
 
+### Deep analysis with AI (exported logs)
+
+For deeper investigation of widespread or complex issues, you can export a log covering the time period the problem occurred and send the entire file to an AI service for thorough analysis. Here's the recommended workflow:
+
+1. Use the **Historical** tab to query logs around the time the issue occurred
+2. Apply filters to narrow down relevant subsystems/processes if possible
+3. **Export** the results as CSV or Plain Text (Cmd+E)
+4. Upload the exported file to an AI service like [Claude](https://claude.ai) (recommended — use the Opus model for best results) along with a prompt like:
+
+```
+I'm attaching a macOS unified log export from a [describe the Mac — model, macOS version].
+The user is experiencing [brief description of the problem].
+
+Please create a thorough analysis including:
+- An executive summary at the top before getting into specifics
+- What may be causing the problem based on the log entries
+- Log snippets with line numbers supporting each theory
+- Source all theories with references, preferring official vendor
+  documentation (Apple developer docs, support articles, vendor
+  knowledge bases) over blogs or forums
+- Format the output as a PDF-ready report
+```
+
+This approach is especially useful for intermittent issues, kernel panics, networking problems, and MDM enrollment failures where a single log entry doesn't tell the full story.
+
 ### Predicate builder
 The filter panel includes a visual predicate builder. Add clauses with field/operator/value, choose AND/OR joining, or type a raw predicate string for full control.
 

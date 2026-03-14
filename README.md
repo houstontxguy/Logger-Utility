@@ -14,28 +14,37 @@ A native macOS app for viewing unified system logs. Built with SwiftUI, it wraps
 - **Export** — Save logs as CSV, plain text, or .logarchive
 - **Keyboard shortcuts** — Cmd+K (clear), Cmd+F (search), Cmd+E (export)
 
-## Requirements
+## Installation
 
-- macOS 13 Ventura or later
-- Xcode 15+ (to build)
-- Full Disk Access recommended for complete log visibility
+### Download
+Download the latest `LoggerUtility-1.0.0.dmg` from [Releases](https://github.com/houstontxguy/Logger-Utility/releases) and drag **Logger Utility.app** to your Applications folder.
 
-## Building
+The app is signed with a Developer ID certificate. On first launch, macOS may prompt you to allow it in **System Settings > Privacy & Security**.
+
+For full log visibility, grant **Full Disk Access** to Logger Utility in **System Settings > Privacy & Security > Full Disk Access**.
+
+### Build from source
 
 ```bash
 # Clone and build
 git clone https://github.com/houstontxguy/Logger-Utility.git
 cd Logger-Utility
-swift build
-
-# Run
-swift run
+swift build -c release
 
 # Run tests
 swift test
+
+# Build the .app bundle
+./Scripts/build-app.sh
 ```
 
 Or open `Package.swift` in Xcode and press Cmd+R.
+
+## Requirements
+
+- macOS 13 Ventura or later
+- Xcode 15+ (to build from source)
+- Full Disk Access recommended for complete log visibility
 
 ## Architecture
 
@@ -57,14 +66,24 @@ Or open `Package.swift` in Xcode and press Cmd+R.
 ### Project structure
 
 ```
-Sources/LoggerUtility/
-├── App/            — Entry point, app state
-├── Models/         — LogEntry, LogLevel, LogFilter, PredicateClause, etc.
-├── Services/       — LogStreamService, LogShowService, LogParser, ExportService
-├── ViewModels/     — StreamViewModel, HistoricalViewModel, FilterViewModel
-├── Views/          — SwiftUI views (Stream, Historical, Shared, Components)
-├── Utilities/      — RingBuffer, DateFormatting, Constants
-└── Extensions/     — Color+LogLevel, Process+Async, String+Predicate
+Logger Utility/
+├── Package.swift
+├── Scripts/
+│   ├── generate_icon.swift     — Generates AppIcon.icns programmatically
+│   └── build-app.sh            — Builds .app bundle and DMG
+├── Resources/
+│   └── AppIcon.icns            — App icon
+├── Sources/LoggerUtility/
+│   ├── App/            — Entry point, app state
+│   ├── Models/         — LogEntry, LogLevel, LogFilter, PredicateClause, etc.
+│   ├── Services/       — LogStreamService, LogShowService, LogParser, ExportService
+│   ├── ViewModels/     — StreamViewModel, HistoricalViewModel, FilterViewModel
+│   ├── Views/          — SwiftUI views (Stream, Historical, Shared, Components)
+│   ├── Utilities/      — RingBuffer, DateFormatting, Constants
+│   └── Extensions/     — Color+LogLevel, Process+Async, String+Predicate
+├── Tests/LoggerUtilityTests/
+└── docs/
+    └── design.md
 ```
 
 ## Usage

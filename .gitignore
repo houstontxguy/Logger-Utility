@@ -6,3 +6,4 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .swiftpm/xcode/xcuserdata
 *.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+/build/

@@ -30,6 +30,10 @@ SwiftUI `List`/`Table` cannot handle 100K+ rows performantly. `NSTableView` prov
 ```
 Logger Utility/
 ├── Package.swift
+├── Scripts/
+│   └── generate_icon.swift             — Generates AppIcon.icns programmatically via CoreGraphics
+├── Resources/
+│   └── AppIcon.icns                    — App icon (generated, dark terminal window with log-level dots)
 ├── Sources/LoggerUtility/
 │   ├── App/
 │   │   ├── LoggerUtilityApp.swift          — @main entry point, window/scene setup

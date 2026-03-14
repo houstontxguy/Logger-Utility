@@ -29,6 +29,17 @@ struct LoggerUtilityApp: App {
                     NotificationCenter.default.post(name: .exportLogs, object: nil)
                 }
                 .keyboardShortcut("e", modifiers: .command)
+
+                Divider()
+
+                Button("Ask AI About Selected Log") {
+                    NotificationCenter.default.post(name: .askAI, object: nil)
+                }
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+
+                Button("Copy AI Prompt") {
+                    NotificationCenter.default.post(name: .copyAIPrompt, object: nil)
+                }
             }
         }
     }
@@ -38,4 +49,6 @@ extension Notification.Name {
     static let clearLogs = Notification.Name("clearLogs")
     static let focusSearch = Notification.Name("focusSearch")
     static let exportLogs = Notification.Name("exportLogs")
+    static let askAI = Notification.Name("askAI")
+    static let copyAIPrompt = Notification.Name("copyAIPrompt")
 }

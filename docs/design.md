@@ -47,6 +47,7 @@ Logger Utility/
 │   │   ├── PredicateField.swift            — Enum of all predicate fields
 │   │   ├── PredicateOperator.swift         — ==, !=, CONTAINS, BEGINSWITH, etc.
 │   │   ├── ExportFormat.swift              — logarchive, csv, plainText
+│   │   ├── AIProvider.swift                — ChatGPT/Claude/Gemini/Perplexity/Copilot enum
 │   │   └── SubsystemPreset.swift           — Known macOS subsystems for dropdown
 │   ├── Services/
 │   │   ├── LogStreamService.swift          — Wraps `log stream`, publishes via Combine
@@ -54,7 +55,8 @@ Logger Utility/
 │   │   ├── LogCollectService.swift         — Wraps `log collect` for .logarchive export
 │   │   ├── LogCommandBuilder.swift         — Builds argument arrays from LogFilter
 │   │   ├── LogParser.swift                 — Parses NDJSON lines into LogEntry
-│   │   └── ExportService.swift             — CSV and plain text export
+│   │   ├── ExportService.swift             — CSV and plain text export
+│   │   └── AIPromptService.swift           — Builds AI prompts, clipboard, browser launch
 │   ├── ViewModels/
 │   │   ├── StreamViewModel.swift           — Live stream state, buffer, pause/resume
 │   │   ├── HistoricalViewModel.swift       — Query management, results, cancellation
@@ -166,6 +168,45 @@ MainView (TabView)
 
 ---
 
+## Ask AI Integration
+
+Zero-cost AI-assisted log analysis via clipboard + browser workflow:
+
+1. User right-clicks a log entry (or uses Cmd+Shift+A, or the detail panel buttons)
+2. `AIPromptService.buildPrompt()` constructs a contextual prompt including:
+   - macOS version (auto-detected via `ProcessInfo`)
+   - All relevant log fields (timestamp, level, process, subsystem, category, message, format string)
+   - A question asking for explanation and troubleshooting steps
+3. Prompt is copied to clipboard
+4. Browser opens to the user's preferred AI provider
+
+### Supported AI Providers
+- ChatGPT (chatgpt.com) — default
+- Claude (claude.ai/new)
+- Gemini (gemini.google.com)
+- Perplexity (perplexity.ai)
+- Microsoft Copilot (copilot.microsoft.com)
+
+Provider preference is persisted via `@AppStorage` / `UserDefaults`.
+
+### Why clipboard + browser instead of API
+
+| | Clipboard + Browser | API Integration |
+|---|---|---|
+| Cost | Free | Per-query charges |
+| Auth | None needed | API keys, billing |
+| Maintenance | Zero | SDK updates, rate limits |
+| User trust | They see what's sent | Opaque data transmission |
+| Model flexibility | User picks their favorite | Locked to one provider |
+
+---
+
+## Dynamic Subsystem Discovery
+
+After a historical query or during live streaming, the subsystem picker auto-populates with all unique subsystems found in the log data. Subsystems are sorted by frequency with occurrence counts displayed. Apple presets already found in results are deduplicated into a separate "Common" section.
+
+---
+
 ## Streaming Architecture
 
 ### Real-time (`log stream`)
@@ -228,6 +269,7 @@ The subsystem dropdown includes these common macOS subsystems:
 | Cmd+K | Clear logs |
 | Cmd+F | Focus search |
 | Cmd+E | Export |
+| Cmd+Shift+A | Ask AI about selected log |
 
 ---
 

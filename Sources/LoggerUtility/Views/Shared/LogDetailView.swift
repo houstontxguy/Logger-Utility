@@ -2,12 +2,48 @@ import SwiftUI
 
 struct LogDetailView: View {
     let entry: LogEntry?
+    @AppStorage("preferredAIProvider") private var preferredProvider: AIProvider = .chatgpt
+    @State private var showCopiedFeedback = false
 
     var body: some View {
         Group {
             if let entry = entry {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
+                        // Ask AI section
+                        HStack(spacing: 8) {
+                            Menu {
+                                ForEach(AIProvider.allCases) { provider in
+                                    Button(provider.rawValue) {
+                                        preferredProvider = provider
+                                        AIPromptService.askAI(about: entry, using: provider)
+                                    }
+                                }
+                            } label: {
+                                Label("Ask AI (\(preferredProvider.rawValue))", systemImage: "brain")
+                            }
+                            .menuStyle(.borderedButton)
+
+                            Button {
+                                AIPromptService.askAI(about: entry, using: preferredProvider)
+                            } label: {
+                                Label("Open", systemImage: "arrow.up.right.square")
+                            }
+
+                            Button {
+                                AIPromptService.copyPromptToClipboard(for: entry)
+                                showCopiedFeedback = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    showCopiedFeedback = false
+                                }
+                            } label: {
+                                Label(showCopiedFeedback ? "Copied!" : "Copy Prompt", systemImage: showCopiedFeedback ? "checkmark" : "doc.on.doc")
+                            }
+                        }
+                        .controlSize(.small)
+
+                        Divider()
+
                         detailSection("Message", entry.eventMessage, isMessage: true)
                         detailRow("Timestamp", DateFormatting.fullDisplayString(from: entry.timestamp))
                         detailRow("Level", entry.logLevel.rawValue, color: entry.logLevel.color)

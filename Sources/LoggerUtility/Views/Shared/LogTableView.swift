@@ -48,6 +48,29 @@ struct LogTableView: NSViewRepresentable {
         tableView.delegate = context.coordinator
         tableView.dataSource = context.coordinator
 
+        // Context menu
+        let menu = NSMenu()
+
+        let askAIItem = NSMenuItem(title: "Ask AI About This...", action: #selector(Coordinator.askAIAboutEntry(_:)), keyEquivalent: "")
+        askAIItem.target = context.coordinator
+        menu.addItem(askAIItem)
+
+        let copyPromptItem = NSMenuItem(title: "Copy AI Prompt", action: #selector(Coordinator.copyAIPrompt(_:)), keyEquivalent: "")
+        copyPromptItem.target = context.coordinator
+        menu.addItem(copyPromptItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let copyMessageItem = NSMenuItem(title: "Copy Message", action: #selector(Coordinator.copyMessage(_:)), keyEquivalent: "c")
+        copyMessageItem.target = context.coordinator
+        menu.addItem(copyMessageItem)
+
+        let copyRowItem = NSMenuItem(title: "Copy Row", action: #selector(Coordinator.copyRow(_:)), keyEquivalent: "")
+        copyRowItem.target = context.coordinator
+        menu.addItem(copyRowItem)
+
+        tableView.menu = menu
+
         scrollView.documentView = tableView
         context.coordinator.tableView = tableView
 
@@ -144,6 +167,43 @@ struct LogTableView: NSViewRepresentable {
 
         func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
             Constants.RowHeight.standard
+        }
+
+        // MARK: - Context Menu Actions
+
+        private func entryForMenu() -> LogEntry? {
+            guard let tableView = tableView else { return nil }
+            let row = tableView.clickedRow >= 0 ? tableView.clickedRow : tableView.selectedRow
+            guard row >= 0 && row < entries.count else { return nil }
+            return entries[row]
+        }
+
+        @objc func askAIAboutEntry(_ sender: Any?) {
+            guard let entry = entryForMenu() else { return }
+            let provider = AIProvider(rawValue: UserDefaults.standard.string(forKey: "preferredAIProvider") ?? "") ?? .chatgpt
+            AIPromptService.askAI(about: entry, using: provider)
+        }
+
+        @objc func copyAIPrompt(_ sender: Any?) {
+            guard let entry = entryForMenu() else { return }
+            AIPromptService.copyPromptToClipboard(for: entry)
+        }
+
+        @objc func copyMessage(_ sender: Any?) {
+            guard let entry = entryForMenu() else { return }
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(entry.eventMessage, forType: .string)
+        }
+
+        @objc func copyRow(_ sender: Any?) {
+            guard let entry = entryForMenu() else { return }
+            let row = "\(DateFormatting.fullDisplayString(from: entry.timestamp))\t" +
+                      "\(entry.logLevel.rawValue)\t" +
+                      "\(entry.processName)\t\(entry.processID)\t" +
+                      "\(entry.subsystem)\t\(entry.category)\t" +
+                      "\(entry.senderName)\t\(entry.eventMessage)"
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(row, forType: .string)
         }
 
         func tableViewSelectionDidChange(_ notification: Notification) {

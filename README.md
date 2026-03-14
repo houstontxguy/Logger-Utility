@@ -8,16 +8,17 @@ A native macOS app for viewing unified system logs. Built with SwiftUI, it wraps
 - **Historical queries** — Search past logs with arbitrary date ranges and quick shortcuts (5m, 15m, 1h, 24h)
 - **Advanced filtering** — Filter by process, subsystem, category, sender, log level, and custom predicates
 - **Visual predicate builder** — Build complex `log` predicates with a point-and-click UI (supports ==, !=, CONTAINS, BEGINSWITH, ENDSWITH, LIKE, MATCHES)
-- **Subsystem presets** — Quick-select from 18 common macOS subsystems (Bluetooth, Wi-Fi, MDM, kernel, etc.)
+- **Dynamic subsystem discovery** — Subsystem picker auto-populates from query results, sorted by frequency with counts
+- **Ask AI** — Right-click any log entry to get an AI-generated explanation via ChatGPT, Claude, Gemini, Perplexity, or Copilot (no API keys needed — copies a prompt to your clipboard and opens the browser)
 - **High-performance table** — NSTableView handles 100K+ log entries with fixed row heights and cell reuse
-- **Log detail inspector** — Side panel showing all fields for the selected log entry
+- **Log detail inspector** — Side panel showing all fields for the selected log entry, with Ask AI and Copy Prompt buttons
 - **Export** — Save logs as CSV, plain text, or .logarchive
-- **Keyboard shortcuts** — Cmd+K (clear), Cmd+F (search), Cmd+E (export)
+- **Keyboard shortcuts** — Cmd+K (clear), Cmd+F (search), Cmd+E (export), Cmd+Shift+A (Ask AI)
 
 ## Installation
 
 ### Download
-Download the latest `LoggerUtility-1.0.0.dmg` from [Releases](https://github.com/houstontxguy/Logger-Utility/releases) and drag **Logger Utility.app** to your Applications folder.
+Download the latest DMG from [Releases](https://github.com/houstontxguy/Logger-Utility/releases) and drag **Logger Utility.app** to your Applications folder.
 
 The app is signed with a Developer ID certificate. On first launch, macOS may prompt you to allow it in **System Settings > Privacy & Security**.
 
@@ -99,6 +100,15 @@ Logger Utility/
 1. Select a time range using the quick buttons (5m, 15m, 1h, 24h) or the date pickers
 2. Click **Query** to fetch logs for that period
 3. Results can be searched and filtered the same as the stream tab
+
+### Ask AI
+Right-click any log entry and choose **Ask AI About This...** to get help understanding a log message. The app:
+1. Builds a contextual prompt including the log message, process, subsystem, macOS version, etc.
+2. Copies the prompt to your clipboard
+3. Opens your preferred AI tool in the browser (ChatGPT, Claude, Gemini, Perplexity, or Microsoft Copilot)
+4. Just paste (Cmd+V) and send
+
+You can also use the **Ask AI** buttons in the detail inspector panel, or press **Cmd+Shift+A**. Your preferred AI provider is remembered between sessions.
 
 ### Predicate builder
 The filter panel includes a visual predicate builder. Add clauses with field/operator/value, choose AND/OR joining, or type a raw predicate string for full control.

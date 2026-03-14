@@ -78,7 +78,8 @@ VOLUME_NAME="$APP_NAME"
 rm -rf "$DMG_STAGING" "$DMG_RW" "$DMG_PATH"
 mkdir -p "$DMG_STAGING"
 cp -R "$BUILD_DIR/$BUNDLE_NAME" "$DMG_STAGING/"
-ln -s /Applications "$DMG_STAGING/Applications"
+# Use Finder alias (not symlink) so the Applications folder icon renders correctly
+osascript -e "tell application \"Finder\" to make alias file to POSIX file \"/Applications\" at POSIX file \"$DMG_STAGING\""
 
 # Create a read-write DMG so we can set Finder view options
 hdiutil create -volname "$VOLUME_NAME" \

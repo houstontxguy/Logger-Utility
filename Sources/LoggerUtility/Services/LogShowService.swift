@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 
+@MainActor
 final class LogShowService: ObservableObject {
     @Published private(set) var isRunning = false
     @Published private(set) var errorMessage: String?
@@ -8,14 +9,11 @@ final class LogShowService: ObservableObject {
     private var process: Process?
 
     func query(filter: LogFilter) async -> [LogEntry] {
-        await MainActor.run {
-            isRunning = true
-            errorMessage = nil
-        }
+        isRunning = true
+        errorMessage = nil
 
         let args = LogCommandBuilder.buildShowArguments(from: filter)
         var entries: [LogEntry] = []
-
         let entriesLock = NSLock()
 
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
@@ -29,7 +27,7 @@ final class LogShowService: ObservableObject {
                     }
                 },
                 onError: { [weak self] error in
-                    DispatchQueue.main.async {
+                    Task { @MainActor in
                         self?.errorMessage = error
                     }
                 },
@@ -40,10 +38,8 @@ final class LogShowService: ObservableObject {
             self.process = proc
         }
 
-        await MainActor.run {
-            isRunning = false
-        }
-
+        isRunning = false
+        process = nil
         return entries
     }
 
@@ -55,6 +51,8 @@ final class LogShowService: ObservableObject {
     }
 
     deinit {
-        cancel()
+        if let process = process, process.isRunning {
+            process.terminate()
+        }
     }
 }

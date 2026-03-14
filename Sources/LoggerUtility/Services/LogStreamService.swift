@@ -1,6 +1,26 @@
 import Foundation
 import Combine
 
+/// Thread-safe batch accumulator for log entries
+private final class EntryBatch: @unchecked Sendable {
+    private let queue = DispatchQueue(label: "com.loggerutility.stream.batch")
+    private var buffer: [LogEntry] = []
+
+    func append(_ entry: LogEntry) {
+        queue.async { self.buffer.append(entry) }
+    }
+
+    func flush() -> [LogEntry] {
+        queue.sync {
+            guard !buffer.isEmpty else { return [] }
+            let batch = buffer
+            buffer.removeAll(keepingCapacity: true)
+            return batch
+        }
+    }
+}
+
+@MainActor
 final class LogStreamService: ObservableObject {
     @Published private(set) var isRunning = false
     @Published private(set) var errorMessage: String?
@@ -8,9 +28,8 @@ final class LogStreamService: ObservableObject {
     let entryPublisher = PassthroughSubject<[LogEntry], Never>()
 
     private var process: Process?
-    private var batchBuffer: [LogEntry] = []
     private var batchTimer: Timer?
-    private let batchQueue = DispatchQueue(label: "com.loggerutility.stream.batch")
+    private var batch = EntryBatch()
 
     func start(filter: LogFilter) {
         stop()
@@ -18,26 +37,28 @@ final class LogStreamService: ObservableObject {
         let args = LogCommandBuilder.buildStreamArguments(from: filter)
         isRunning = true
         errorMessage = nil
+        batch = EntryBatch()
 
+        let currentBatch = batch
         batchTimer = Timer.scheduledTimer(withTimeInterval: Constants.batchInterval, repeats: true) { [weak self] _ in
-            self?.flushBatch()
+            Task { @MainActor in
+                self?.flushBatch()
+            }
         }
 
         process = Process.run(
             arguments: args,
-            onOutput: { [weak self] line in
+            onOutput: { line in
                 guard let entry = LogParser.parse(line: line) else { return }
-                self?.batchQueue.async {
-                    self?.batchBuffer.append(entry)
-                }
+                currentBatch.append(entry)
             },
             onError: { [weak self] error in
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     self?.errorMessage = error
                 }
             },
             onTermination: { [weak self] _ in
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     self?.flushBatch()
                     self?.isRunning = false
                     self?.batchTimer?.invalidate()
@@ -48,27 +69,25 @@ final class LogStreamService: ObservableObject {
     }
 
     func stop() {
+        batchTimer?.invalidate()
+        batchTimer = nil
         if let process = process, process.isRunning {
             process.terminate()
         }
         process = nil
-        batchTimer?.invalidate()
-        batchTimer = nil
         isRunning = false
     }
 
     private func flushBatch() {
-        batchQueue.async { [weak self] in
-            guard let self = self, !self.batchBuffer.isEmpty else { return }
-            let batch = self.batchBuffer
-            self.batchBuffer.removeAll(keepingCapacity: true)
-            DispatchQueue.main.async {
-                self.entryPublisher.send(batch)
-            }
-        }
+        let entries = batch.flush()
+        guard !entries.isEmpty else { return }
+        entryPublisher.send(entries)
     }
 
     deinit {
-        stop()
+        batchTimer?.invalidate()
+        if let process = process, process.isRunning {
+            process.terminate()
+        }
     }
 }

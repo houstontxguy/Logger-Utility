@@ -1,14 +1,13 @@
 import Foundation
 
+@MainActor
 final class LogCollectService: ObservableObject {
     @Published private(set) var isRunning = false
     @Published private(set) var errorMessage: String?
 
     func collect(outputPath: String, lastDuration: String? = nil, startDate: Date? = nil) async -> Bool {
-        await MainActor.run {
-            isRunning = true
-            errorMessage = nil
-        }
+        isRunning = true
+        errorMessage = nil
 
         let args = LogCommandBuilder.buildCollectArguments(
             outputPath: outputPath,
@@ -18,18 +17,15 @@ final class LogCollectService: ObservableObject {
 
         do {
             let result = try await Process.runAsync(arguments: args)
-            await MainActor.run {
-                isRunning = false
-                if !result.stderr.isEmpty && result.stderr.contains("Error") {
-                    errorMessage = result.stderr
-                }
+            isRunning = false
+            if result.exitCode != 0 {
+                errorMessage = result.stderr.isEmpty ? "log collect failed with exit code \(result.exitCode)" : result.stderr
+                return false
             }
-            return result.stderr.isEmpty || !result.stderr.contains("Error")
+            return true
         } catch {
-            await MainActor.run {
-                isRunning = false
-                errorMessage = error.localizedDescription
-            }
+            isRunning = false
+            errorMessage = error.localizedDescription
             return false
         }
     }

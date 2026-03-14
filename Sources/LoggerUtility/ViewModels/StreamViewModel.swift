@@ -37,6 +37,10 @@ final class StreamViewModel: ObservableObject {
             .assign(to: &$errorMessage)
     }
 
+    deinit {
+        rateTimer?.invalidate()
+    }
+
     func start() {
         ringBuffer.clear()
         entries = []
@@ -44,6 +48,7 @@ final class StreamViewModel: ObservableObject {
         entriesPerSecond = 0
         rateCounter = 0
         isPaused = false
+        selectedEntry = nil
 
         startRateTimer()
         streamService.start(filter: filter)
@@ -59,7 +64,7 @@ final class StreamViewModel: ObservableObject {
     func togglePause() {
         isPaused.toggle()
         if !isPaused {
-            entries = filteredEntries(from: ringBuffer.toArray())
+            rebuildFilteredEntries()
         }
     }
 
@@ -70,21 +75,18 @@ final class StreamViewModel: ObservableObject {
         selectedEntry = nil
     }
 
-    var filteredDisplayEntries: [LogEntry] {
-        entries
-    }
-
     private func handleBatch(_ batch: [LogEntry]) {
         ringBuffer.append(contentsOf: batch)
         entryCount = ringBuffer.count
         rateCounter += batch.count
 
         if !isPaused {
-            entries = filteredEntries(from: ringBuffer.toArray())
+            rebuildFilteredEntries()
         }
     }
 
-    private func filteredEntries(from source: [LogEntry]) -> [LogEntry] {
+    private func rebuildFilteredEntries() {
+        let source = ringBuffer.toArray()
         var result = source
 
         if !filter.selectedLevels.isEmpty && filter.selectedLevels.count < LogLevel.allCases.count {
@@ -92,15 +94,16 @@ final class StreamViewModel: ObservableObject {
         }
 
         if !searchText.isEmpty {
+            let search = searchText
             result = result.filter {
-                $0.eventMessage.localizedCaseInsensitiveContains(searchText) ||
-                $0.processName.localizedCaseInsensitiveContains(searchText) ||
-                $0.subsystem.localizedCaseInsensitiveContains(searchText) ||
-                $0.category.localizedCaseInsensitiveContains(searchText)
+                $0.eventMessage.localizedCaseInsensitiveContains(search) ||
+                $0.processName.localizedCaseInsensitiveContains(search) ||
+                $0.subsystem.localizedCaseInsensitiveContains(search) ||
+                $0.category.localizedCaseInsensitiveContains(search)
             }
         }
 
-        return result
+        entries = result
     }
 
     private func startRateTimer() {

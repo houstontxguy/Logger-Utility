@@ -25,7 +25,7 @@ struct HistoricalView: View {
 
                 HSplitView {
                     LogTableView(
-                        entries: viewModel.filteredEntries,
+                        entries: viewModel.displayEntries,
                         selectedEntry: $viewModel.selectedEntry,
                         autoScroll: false
                     )
@@ -41,7 +41,7 @@ struct HistoricalView: View {
             QueryStatusBar(viewModel: viewModel)
         }
         .sheet(isPresented: $exportViewModel.isShowingSheet) {
-            ExportSheetView(viewModel: exportViewModel, entries: viewModel.filteredEntries)
+            ExportSheetView(viewModel: exportViewModel, entries: viewModel.displayEntries)
         }
     }
 }

@@ -19,6 +19,7 @@ struct StreamView: View {
                 if filterViewModel.isShowingPanel {
                     FilterPanelView(viewModel: filterViewModel) {
                         viewModel.filter = filterViewModel.filter
+                        viewModel.selectedEntry = nil
                         if viewModel.isRunning {
                             viewModel.stop()
                             viewModel.start()

@@ -4,6 +4,7 @@ import Combine
 @MainActor
 final class HistoricalViewModel: ObservableObject {
     @Published var entries: [LogEntry] = []
+    @Published var displayEntries: [LogEntry] = []
     @Published var filter = LogFilter()
     @Published var isQuerying = false
     @Published var errorMessage: String?
@@ -18,10 +19,24 @@ final class HistoricalViewModel: ObservableObject {
 
     private let showService = LogShowService()
     private var queryTask: Task<Void, Never>?
+    private var cancellables = Set<AnyCancellable>()
+    private var searchDebounce: AnyCancellable?
+
+    init() {
+        // Debounce search text and rebuild filtered results
+        searchDebounce = $searchText
+            .debounce(for: .seconds(Constants.searchDebounceInterval), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.rebuildDisplayEntries()
+            }
+    }
 
     func query() {
         queryTask?.cancel()
+        showService.cancel()
+
         entries = []
+        displayEntries = []
         resultCount = 0
         errorMessage = nil
         selectedEntry = nil
@@ -30,17 +45,22 @@ final class HistoricalViewModel: ObservableObject {
         filter.endDate = endDate
 
         let startTime = Date()
+        let currentFilter = filter
 
         queryTask = Task {
             isQuerying = true
-            let results = await showService.query(filter: filter)
+            let results = await showService.query(filter: currentFilter)
 
-            if !Task.isCancelled {
-                entries = results
-                resultCount = results.count
-                queryDuration = Date().timeIntervalSince(startTime)
-                errorMessage = showService.errorMessage
+            guard !Task.isCancelled else {
+                isQuerying = false
+                return
             }
+
+            entries = results
+            resultCount = results.count
+            queryDuration = Date().timeIntervalSince(startTime)
+            errorMessage = showService.errorMessage
+            rebuildDisplayEntries()
             isQuerying = false
         }
     }
@@ -56,13 +76,17 @@ final class HistoricalViewModel: ObservableObject {
         startDate = Calendar.current.date(byAdding: .minute, value: -minutes, to: endDate) ?? endDate
     }
 
-    var filteredEntries: [LogEntry] {
-        guard !searchText.isEmpty else { return entries }
-        return entries.filter {
-            $0.eventMessage.localizedCaseInsensitiveContains(searchText) ||
-            $0.processName.localizedCaseInsensitiveContains(searchText) ||
-            $0.subsystem.localizedCaseInsensitiveContains(searchText) ||
-            $0.category.localizedCaseInsensitiveContains(searchText)
+    private func rebuildDisplayEntries() {
+        guard !searchText.isEmpty else {
+            displayEntries = entries
+            return
+        }
+        let search = searchText
+        displayEntries = entries.filter {
+            $0.eventMessage.localizedCaseInsensitiveContains(search) ||
+            $0.processName.localizedCaseInsensitiveContains(search) ||
+            $0.subsystem.localizedCaseInsensitiveContains(search) ||
+            $0.category.localizedCaseInsensitiveContains(search)
         }
     }
 }

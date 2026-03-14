@@ -44,7 +44,8 @@ enum LogLevel: String, CaseIterable, Identifiable, Codable, Comparable {
     }
 
     static func from(_ string: String) -> LogLevel {
-        switch string.lowercased() {
+        let trimmed = string.trimmingCharacters(in: .whitespaces).lowercased()
+        switch trimmed {
         case "default": return .default
         case "info": return .info
         case "debug": return .debug

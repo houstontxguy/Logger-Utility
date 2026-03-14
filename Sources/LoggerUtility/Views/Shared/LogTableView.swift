@@ -7,7 +7,7 @@ struct LogTableView: NSViewRepresentable {
     var autoScroll: Bool = true
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(self)
+        Coordinator(selectedEntry: $selectedEntry)
     }
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -41,9 +41,7 @@ struct LogTableView: NSViewRepresentable {
             column.title = title
             column.width = width
             column.minWidth = 40
-            if id == "message" {
-                column.resizingMask = .autoresizingMask
-            }
+            column.resizingMask = .autoresizingMask
             tableView.addTableColumn(column)
         }
 
@@ -52,23 +50,21 @@ struct LogTableView: NSViewRepresentable {
 
         scrollView.documentView = tableView
         context.coordinator.tableView = tableView
-        context.coordinator.scrollView = scrollView
 
         return scrollView
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         let coordinator = context.coordinator
+        guard let tableView = coordinator.tableView else { return }
+
         let oldCount = coordinator.entries.count
         coordinator.entries = entries
-        coordinator.parent = self
-
-        guard let tableView = coordinator.tableView else { return }
 
         let clipView = scrollView.contentView
         let contentHeight = tableView.frame.height
         let scrollOffset = clipView.bounds.origin.y + clipView.bounds.height
-        let isAtBottom = scrollOffset >= contentHeight - 50
+        let isAtBottom = contentHeight <= clipView.bounds.height || scrollOffset >= contentHeight - 50
 
         tableView.reloadData()
 
@@ -77,14 +73,22 @@ struct LogTableView: NSViewRepresentable {
         }
     }
 
+    static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
+        if let tableView = coordinator.tableView {
+            tableView.delegate = nil
+            tableView.dataSource = nil
+        }
+        coordinator.tableView = nil
+        coordinator.entries = []
+    }
+
     final class Coordinator: NSObject, NSTableViewDelegate, NSTableViewDataSource {
-        var parent: LogTableView
+        var selectedEntry: Binding<LogEntry?>
         var entries: [LogEntry] = []
         weak var tableView: NSTableView?
-        weak var scrollView: NSScrollView?
 
-        init(_ parent: LogTableView) {
-            self.parent = parent
+        init(selectedEntry: Binding<LogEntry?>) {
+            self.selectedEntry = selectedEntry
         }
 
         func numberOfRows(in tableView: NSTableView) -> Int {
@@ -107,6 +111,10 @@ struct LogTableView: NSViewRepresentable {
                 textField.cell?.lineBreakMode = .byTruncatingTail
                 textField.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
             }
+
+            // Reset to defaults
+            textField.textColor = .labelColor
+            textField.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
 
             switch identifier.rawValue {
             case "timestamp":
@@ -131,10 +139,6 @@ struct LogTableView: NSViewRepresentable {
                 break
             }
 
-            if identifier.rawValue != "level" {
-                textField.textColor = .labelColor
-            }
-
             return textField
         }
 
@@ -146,9 +150,9 @@ struct LogTableView: NSViewRepresentable {
             guard let tableView = notification.object as? NSTableView else { return }
             let row = tableView.selectedRow
             if row >= 0 && row < entries.count {
-                parent.selectedEntry = entries[row]
+                selectedEntry.wrappedValue = entries[row]
             } else {
-                parent.selectedEntry = nil
+                selectedEntry.wrappedValue = nil
             }
         }
     }

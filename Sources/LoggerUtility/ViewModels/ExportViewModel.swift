@@ -18,19 +18,21 @@ final class ExportViewModel: ObservableObject {
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
+        let format = selectedFormat
+        let entriesToExport = entries
+
         isExporting = true
         errorMessage = nil
 
-        Task {
+        Task { @MainActor in
             do {
-                // Create the file first
                 FileManager.default.createFile(atPath: url.path, contents: nil)
 
-                switch selectedFormat {
+                switch format {
                 case .csv:
-                    try ExportService.exportCSV(entries: entries, to: url)
+                    try ExportService.exportCSV(entries: entriesToExport, to: url)
                 case .plainText:
-                    try ExportService.exportPlainText(entries: entries, to: url)
+                    try ExportService.exportPlainText(entries: entriesToExport, to: url)
                 case .logarchive:
                     let success = await collectService.collect(
                         outputPath: url.path,

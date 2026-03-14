@@ -70,64 +70,23 @@ codesign --verify --deep --strict "$BUILD_DIR/$BUNDLE_NAME"
 echo "    Signature verified."
 
 echo "==> Creating DMG..."
-DMG_STAGING="$BUILD_DIR/dmg-staging"
-DMG_RW="$BUILD_DIR/LoggerUtility-rw.dmg"
 DMG_PATH="$BUILD_DIR/LoggerUtility-${VERSION}.dmg"
-VOLUME_NAME="$APP_NAME"
+rm -f "$DMG_PATH"
 
-rm -rf "$DMG_STAGING" "$DMG_RW" "$DMG_PATH"
-mkdir -p "$DMG_STAGING"
-cp -R "$BUILD_DIR/$BUNDLE_NAME" "$DMG_STAGING/"
-# Use Finder alias (not symlink) so the Applications folder icon renders correctly
-osascript -e "tell application \"Finder\" to make alias file to POSIX file \"/Applications\" at POSIX file \"$DMG_STAGING\""
-
-# Create a read-write DMG so we can set Finder view options
-hdiutil create -volname "$VOLUME_NAME" \
-    -srcfolder "$DMG_STAGING" \
-    -ov -format UDRW \
-    "$DMG_RW"
-
-# Mount the read-write DMG
-MOUNT_DIR=$(hdiutil attach "$DMG_RW" -readwrite -noverify | grep "/Volumes/" | awk '{print substr($0, index($0, "/Volumes/"))}')
-echo "    Mounted at: $MOUNT_DIR"
-
-# Use AppleScript to configure Finder view
-osascript << APPLESCRIPT
-tell application "Finder"
-    tell disk "$VOLUME_NAME"
-        open
-        set current view of container window to icon view
-        set toolbar visible of container window to false
-        set statusbar visible of container window to false
-        set bounds of container window to {100, 100, 640, 400}
-        set viewOptions to the icon view options of container window
-        set arrangement of viewOptions to not arranged
-        set icon size of viewOptions to 80
-        set position of item "$BUNDLE_NAME" of container window to {360, 150}
-        set position of item "Applications" of container window to {160, 150}
-        close
-        open
-        update without registering applications
-        delay 1
-        close
-    end tell
-end tell
-APPLESCRIPT
-
-# Ensure .DS_Store is flushed
-sync
-
-# Detach the DMG
-hdiutil detach "$MOUNT_DIR" -quiet
-
-# Convert to compressed read-only DMG
-hdiutil convert "$DMG_RW" -format UDZO -o "$DMG_PATH"
+# Requires: brew install create-dmg
+create-dmg \
+    --volname "$APP_NAME" \
+    --window-pos 200 120 \
+    --window-size 540 380 \
+    --icon-size 80 \
+    --icon "$BUNDLE_NAME" 380 190 \
+    --app-drop-link 160 190 \
+    --no-internet-enable \
+    "$DMG_PATH" \
+    "$BUILD_DIR/$BUNDLE_NAME"
 
 # Sign the DMG
 codesign --sign "$SIGNING_IDENTITY" "$DMG_PATH"
-
-# Clean up
-rm -rf "$DMG_STAGING" "$DMG_RW"
 
 echo ""
 echo "==> Build complete!"

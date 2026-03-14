@@ -17,7 +17,10 @@ struct HistoricalView: View {
 
             HSplitView {
                 if filterViewModel.isShowingPanel {
-                    FilterPanelView(viewModel: filterViewModel) {
+                    FilterPanelView(
+                        viewModel: filterViewModel,
+                        discoveredSubsystems: viewModel.discoveredSubsystems
+                    ) {
                         viewModel.filter = filterViewModel.filter
                     }
                     .frame(minWidth: 280, maxWidth: 350)

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SubsystemPickerView: View {
     @Binding var selection: String
+    var discoveredSubsystems: [(name: String, count: Int)] = []
     @State private var isCustom = false
     @State private var pickerSelection: String = ""
 
@@ -23,10 +24,24 @@ struct SubsystemPickerView: View {
             } else {
                 Picker("Subsystem", selection: $pickerSelection) {
                     Text("All").tag("")
-                    Divider()
-                    ForEach(SubsystemPreset.all, id: \.self) { preset in
-                        Text(preset).tag(preset)
+
+                    if !discoveredSubsystems.isEmpty {
+                        Divider()
+                        Section("From Results") {
+                            ForEach(discoveredSubsystems, id: \.name) { item in
+                                Text("\(item.name) (\(item.count))")
+                                    .tag(item.name)
+                            }
+                        }
                     }
+
+                    Divider()
+                    Section("Common") {
+                        ForEach(presetsNotInDiscovered, id: \.self) { preset in
+                            Text(preset).tag(preset)
+                        }
+                    }
+
                     Divider()
                     Text("Custom...").tag("__custom__")
                 }
@@ -45,5 +60,11 @@ struct SubsystemPickerView: View {
                 }
             }
         }
+    }
+
+    /// Apple presets that aren't already in the discovered list
+    private var presetsNotInDiscovered: [String] {
+        let discoveredNames = Set(discoveredSubsystems.map(\.name))
+        return SubsystemPreset.all.filter { !discoveredNames.contains($0) }
     }
 }

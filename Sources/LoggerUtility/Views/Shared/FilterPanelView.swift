@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FilterPanelView: View {
     @ObservedObject var viewModel: FilterViewModel
+    var discoveredSubsystems: [(name: String, count: Int)] = []
     var onApply: () -> Void
 
     var body: some View {
@@ -17,7 +18,10 @@ struct FilterPanelView: View {
                     }
 
                     labeledField("Subsystem") {
-                        SubsystemPickerView(selection: $viewModel.filter.subsystem)
+                        SubsystemPickerView(
+                            selection: $viewModel.filter.subsystem,
+                            discoveredSubsystems: discoveredSubsystems
+                        )
                     }
 
                     labeledField("Category") {

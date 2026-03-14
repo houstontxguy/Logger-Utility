@@ -13,7 +13,9 @@ final class StreamViewModel: ObservableObject {
     @Published var entriesPerSecond = 0.0
     @Published var searchText = ""
     @Published var selectedEntry: LogEntry?
+    @Published var discoveredSubsystems: [(name: String, count: Int)] = []
 
+    private var subsystemCounts: [String: Int] = [:]
     private let streamService = LogStreamService()
     private var ringBuffer = RingBuffer<LogEntry>(capacity: Constants.defaultStreamBufferCapacity)
     private var cancellables = Set<AnyCancellable>()
@@ -49,6 +51,8 @@ final class StreamViewModel: ObservableObject {
         rateCounter = 0
         isPaused = false
         selectedEntry = nil
+        subsystemCounts = [:]
+        discoveredSubsystems = []
 
         startRateTimer()
         streamService.start(filter: filter)
@@ -79,6 +83,15 @@ final class StreamViewModel: ObservableObject {
         ringBuffer.append(contentsOf: batch)
         entryCount = ringBuffer.count
         rateCounter += batch.count
+
+        for entry in batch where !entry.subsystem.isEmpty {
+            subsystemCounts[entry.subsystem, default: 0] += 1
+        }
+        // Rebuild subsystem list every 5 seconds worth of batches (throttled via rate timer)
+        // or just keep it in sync — it's a dictionary sort, cheap enough
+        discoveredSubsystems = subsystemCounts
+            .sorted { $0.value > $1.value }
+            .map { (name: $0.key, count: $0.value) }
 
         if !isPaused {
             rebuildFilteredEntries()

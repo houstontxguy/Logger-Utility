@@ -17,7 +17,10 @@ struct StreamView: View {
 
             HSplitView {
                 if filterViewModel.isShowingPanel {
-                    FilterPanelView(viewModel: filterViewModel) {
+                    FilterPanelView(
+                        viewModel: filterViewModel,
+                        discoveredSubsystems: viewModel.discoveredSubsystems
+                    ) {
                         viewModel.filter = filterViewModel.filter
                         viewModel.selectedEntry = nil
                         if viewModel.isRunning {

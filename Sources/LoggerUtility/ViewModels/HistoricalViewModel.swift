@@ -12,6 +12,7 @@ final class HistoricalViewModel: ObservableObject {
     @Published var queryDuration: TimeInterval = 0
     @Published var searchText = ""
     @Published var selectedEntry: LogEntry?
+    @Published var discoveredSubsystems: [(name: String, count: Int)] = []
 
     // Time range shortcuts
     @Published var startDate = Calendar.current.date(byAdding: .minute, value: -5, to: Date()) ?? Date()
@@ -60,6 +61,7 @@ final class HistoricalViewModel: ObservableObject {
             resultCount = results.count
             queryDuration = Date().timeIntervalSince(startTime)
             errorMessage = showService.errorMessage
+            rebuildSubsystemList()
             rebuildDisplayEntries()
             isQuerying = false
         }
@@ -74,6 +76,16 @@ final class HistoricalViewModel: ObservableObject {
     func applyLastDuration(minutes: Int) {
         endDate = Date()
         startDate = Calendar.current.date(byAdding: .minute, value: -minutes, to: endDate) ?? endDate
+    }
+
+    private func rebuildSubsystemList() {
+        var counts: [String: Int] = [:]
+        for entry in entries where !entry.subsystem.isEmpty {
+            counts[entry.subsystem, default: 0] += 1
+        }
+        discoveredSubsystems = counts
+            .sorted { $0.value > $1.value }
+            .map { (name: $0.key, count: $0.value) }
     }
 
     private func rebuildDisplayEntries() {

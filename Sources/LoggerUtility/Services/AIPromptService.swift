@@ -10,7 +10,7 @@ enum AIPromptService {
 
     static var preferredProvider: AIProvider {
         get {
-            AIProvider(rawValue: UserDefaults.standard.string(forKey: "preferredAIProvider") ?? "") ?? .chatgpt
+            AIProvider(rawValue: UserDefaults.standard.string(forKey: "preferredAIProvider") ?? "") ?? .perplexity
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: "preferredAIProvider")

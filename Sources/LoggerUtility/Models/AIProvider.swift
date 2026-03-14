@@ -9,7 +9,16 @@ enum AIProvider: String, CaseIterable, Identifiable, Codable {
 
     var id: String { rawValue }
 
-    var url: URL {
+    /// Whether this provider supports passing a query via URL parameter
+    var supportsURLQuery: Bool {
+        switch self {
+        case .perplexity: return true
+        default: return false
+        }
+    }
+
+    /// Base URL for providers that don't support URL queries
+    var baseURL: URL {
         switch self {
         case .chatgpt: return URL(string: "https://chatgpt.com")!
         case .claude: return URL(string: "https://claude.ai/new")!
@@ -19,13 +28,13 @@ enum AIProvider: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var instructions: String {
-        switch self {
-        case .chatgpt: return "Paste into the message box with Cmd+V"
-        case .claude: return "Paste into the message box with Cmd+V"
-        case .gemini: return "Paste into the message box with Cmd+V"
-        case .perplexity: return "Paste into the search box with Cmd+V"
-        case .copilot: return "Paste into the message box with Cmd+V"
+    /// Build the URL for this provider, optionally embedding the prompt as a query parameter
+    func url(withPrompt prompt: String? = nil) -> URL {
+        guard let prompt = prompt, supportsURLQuery,
+              let encoded = prompt.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let queryURL = URL(string: "https://www.perplexity.ai/search?q=\(encoded)") else {
+            return baseURL
         }
+        return queryURL
     }
 }

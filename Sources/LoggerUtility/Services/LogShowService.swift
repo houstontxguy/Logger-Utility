@@ -6,43 +6,53 @@ final class LogShowService: ObservableObject {
     @Published private(set) var isRunning = false
     @Published private(set) var errorMessage: String?
 
-    private var queryTask: Task<[LogEntry], Never>?
+    private var process: Process?
 
     func query(filter: LogFilter) async -> [LogEntry] {
         isRunning = true
         errorMessage = nil
 
         let args = LogCommandBuilder.buildShowArguments(from: filter)
+        var entries: [LogEntry] = []
+        let entriesLock = NSLock()
 
-        do {
-            let result = try await PrivilegedProcess.run(arguments: args)
-
-            if result.exitCode != 0 && !result.stderr.isEmpty {
-                errorMessage = result.stderr
-            }
-
-            // Parse NDJSON output line by line
-            let lines = result.stdout.split(separator: "\n", omittingEmptySubsequences: true)
-            var entries: [LogEntry] = []
-            entries.reserveCapacity(lines.count)
-
-            for line in lines {
-                if let entry = LogParser.parse(line: String(line)) {
-                    entries.append(entry)
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            let proc = Process.run(
+                arguments: args,
+                onOutput: { line in
+                    if let entry = LogParser.parse(line: line) {
+                        entriesLock.lock()
+                        entries.append(entry)
+                        entriesLock.unlock()
+                    }
+                },
+                onError: { [weak self] error in
+                    Task { @MainActor in
+                        self?.errorMessage = error
+                    }
+                },
+                onTermination: { _ in
+                    continuation.resume()
                 }
-            }
-
-            isRunning = false
-            return entries
-        } catch {
-            isRunning = false
-            errorMessage = error.localizedDescription
-            return []
+            )
+            self.process = proc
         }
+
+        isRunning = false
+        process = nil
+        return entries
     }
 
     func cancel() {
-        queryTask?.cancel()
-        queryTask = nil
+        if let process = process, process.isRunning {
+            process.terminate()
+        }
+        process = nil
+    }
+
+    deinit {
+        if let process = process, process.isRunning {
+            process.terminate()
+        }
     }
 }

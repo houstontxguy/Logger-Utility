@@ -1,10 +1,10 @@
 import Foundation
 
 enum AIProvider: String, CaseIterable, Identifiable, Codable {
+    case perplexity = "Perplexity"
     case chatgpt = "ChatGPT"
     case claude = "Claude"
     case gemini = "Gemini"
-    case perplexity = "Perplexity"
     case copilot = "Microsoft Copilot"
 
     var id: String { rawValue }

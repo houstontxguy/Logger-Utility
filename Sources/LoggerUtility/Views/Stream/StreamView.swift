@@ -22,7 +22,7 @@ struct StreamView: View {
                         discoveredSubsystems: viewModel.discoveredSubsystems
                     ) {
                         viewModel.filter = filterViewModel.filter
-                        viewModel.selectedEntry = nil
+                        viewModel.selectedEntries = []
                         if viewModel.isRunning {
                             viewModel.stop()
                             viewModel.start()
@@ -34,11 +34,11 @@ struct StreamView: View {
                 HSplitView {
                     LogTableView(
                         entries: viewModel.entries,
-                        selectedEntry: $viewModel.selectedEntry
+                        selectedEntries: $viewModel.selectedEntries
                     )
 
-                    if viewModel.selectedEntry != nil {
-                        LogDetailView(entry: viewModel.selectedEntry)
+                    if !viewModel.selectedEntries.isEmpty {
+                        LogDetailView(entries: viewModel.selectedEntries)
                     }
                 }
             }

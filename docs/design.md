@@ -105,7 +105,7 @@ Logger Utility/
 ## Key Data Models
 
 ### LogEntry
-Parsed from `log --style ndjson` output. Fields:
+Parsed from `log --style ndjson` output. Conforms to `Identifiable`, `Equatable`, `Hashable` (hashed on `id`). Fields:
 - `id` (UUID) — unique identifier
 - `timestamp` (Date)
 - `processID` (Int), `processName` (String)
@@ -141,9 +141,9 @@ MainView (TabView)
 │   ├── Toolbar: Start/Stop, Pause, Clear, Search, Filter toggle, Export
 │   ├── HSplitView
 │   │   ├── FilterPanel (togglable sidebar)
-│   │   ├── LogTableView (NSTableView: Timestamp, Level, Process, PID,
-│   │   │                 Subsystem, Category, Sender, Message)
-│   │   └── LogDetailView (inspector, togglable)
+│   │   ├── LogTableView (NSTableView, multi-select: Timestamp, Level,
+│   │   │                 Process, PID, Subsystem, Category, Sender, Message)
+│   │   └── LogDetailView (inspector: single detail or multi-entry summary)
 │   └── StatusBar: entry count, rate (entries/sec), status
 │
 ├── Historical Tab
@@ -172,22 +172,34 @@ MainView (TabView)
 
 Zero-cost AI-assisted log analysis via clipboard + browser workflow:
 
+### Single Entry
 1. User right-clicks a log entry (or uses Cmd+Shift+A, or the detail panel buttons)
-2. `AIPromptService.buildPrompt()` constructs a contextual prompt including:
+2. `AIPromptService.buildPrompt(for:)` constructs a contextual prompt including:
    - macOS version (auto-detected via `ProcessInfo`)
    - All relevant log fields (timestamp, level, process, subsystem, category, message, format string)
    - A question asking for explanation and troubleshooting steps
 3. Prompt is copied to clipboard
 4. Browser opens to the user's preferred AI provider
 
-### Supported AI Providers
-- ChatGPT (chatgpt.com) — default
+### Multi-Entry Selection
+1. User Cmd+clicks or Shift+clicks to select multiple log entries (up to 50 capped)
+2. Detail panel shows a summary view: entry count, time range, level breakdown, unique processes/subsystems
+3. `AIPromptService.buildPrompt(for entries:)` constructs a combined prompt with all entries formatted as numbered sections
+4. Context menu dynamically shows "Ask AI About Selected Logs (N)"
+5. For Perplexity: if the URL exceeds 2048 characters, falls back to clipboard + dialog
+
+### Supported AI Providers (ordered by preference)
+- Perplexity (perplexity.ai) — default, supports URL query parameter
+- ChatGPT (chatgpt.com)
 - Claude (claude.ai/new)
 - Gemini (gemini.google.com)
-- Perplexity (perplexity.ai)
 - Microsoft Copilot (copilot.microsoft.com)
 
 Provider preference is persisted via `@AppStorage` / `UserDefaults`.
+
+### Ask AI UX
+- Buttons wrapped in a `GroupBox("Ask AI")` for visual separation
+- `.buttonStyle(.bordered)` for proper dark mode contrast (no `.controlSize(.small)`)
 
 ### Why clipboard + browser instead of API
 

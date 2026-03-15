@@ -92,7 +92,7 @@ struct FilterPanelView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             content()
         }
     }

@@ -11,7 +11,7 @@ final class HistoricalViewModel: ObservableObject {
     @Published var resultCount = 0
     @Published var queryDuration: TimeInterval = 0
     @Published var searchText = ""
-    @Published var selectedEntry: LogEntry?
+    @Published var selectedEntries: [LogEntry] = []
     @Published var discoveredSubsystems: [(name: String, count: Int)] = []
 
     // Time range shortcuts
@@ -40,7 +40,7 @@ final class HistoricalViewModel: ObservableObject {
         displayEntries = []
         resultCount = 0
         errorMessage = nil
-        selectedEntry = nil
+        selectedEntries = []
 
         filter.startDate = startDate
         filter.endDate = endDate

@@ -12,7 +12,7 @@ final class StreamViewModel: ObservableObject {
     @Published var entryCount = 0
     @Published var entriesPerSecond = 0.0
     @Published var searchText = ""
-    @Published var selectedEntry: LogEntry?
+    @Published var selectedEntries: [LogEntry] = []
     @Published var discoveredSubsystems: [(name: String, count: Int)] = []
 
     private var subsystemCounts: [String: Int] = [:]
@@ -59,7 +59,7 @@ final class StreamViewModel: ObservableObject {
         entriesPerSecond = 0
         rateCounter = 0
         isPaused = false
-        selectedEntry = nil
+        selectedEntries = []
         subsystemCounts = [:]
         discoveredSubsystems = []
         subsystemsDirty = false
@@ -86,7 +86,7 @@ final class StreamViewModel: ObservableObject {
         ringBuffer.clear()
         entries = []
         entryCount = 0
-        selectedEntry = nil
+        selectedEntries = []
     }
 
     private func handleBatch(_ batch: [LogEntry]) {

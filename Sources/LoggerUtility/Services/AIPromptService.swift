@@ -48,33 +48,97 @@ enum AIPromptService {
         return lines.joined(separator: "\n")
     }
 
-    static func copyPromptToClipboard(for entry: LogEntry) {
-        let prompt = buildPrompt(for: entry)
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(prompt, forType: .string)
+    static func buildPrompt(for entries: [LogEntry]) -> String {
+        guard !entries.isEmpty else { return "" }
+        if entries.count == 1 { return buildPrompt(for: entries[0]) }
+
+        let capped = Array(entries.prefix(50))
+        var lines: [String] = []
+
+        let sorted = capped.sorted { $0.timestamp < $1.timestamp }
+        guard let first = sorted.first, let last = sorted.last else { return "" }
+        let earliest = DateFormatting.fullDisplayString(from: first.timestamp)
+        let latest = DateFormatting.fullDisplayString(from: last.timestamp)
+
+        lines.append("These are \(capped.count) log entries from a macOS unified log (macOS \(macOSVersion)).")
+        if entries.count > 50 {
+            lines.append("(Showing first 50 of \(entries.count) selected entries.)")
+        }
+        lines.append("Time range: \(earliest) to \(latest)")
+        lines.append("")
+
+        for (i, entry) in sorted.enumerated() {
+            lines.append("--- Entry \(i + 1) ---")
+            lines.append("Timestamp: \(DateFormatting.fullDisplayString(from: entry.timestamp))")
+            lines.append("Level: \(entry.logLevel.rawValue)")
+            lines.append("Process: \(entry.processName) (PID \(entry.processID))")
+            if !entry.subsystem.isEmpty {
+                lines.append("Subsystem: \(entry.subsystem)")
+            }
+            if !entry.category.isEmpty {
+                lines.append("Category: \(entry.category)")
+            }
+            if !entry.senderName.isEmpty {
+                lines.append("Sender: \(entry.senderName)")
+            }
+            lines.append("Message: \(entry.eventMessage)")
+            if !entry.formatString.isEmpty && entry.formatString != entry.eventMessage {
+                lines.append("Format String: \(entry.formatString)")
+            }
+            lines.append("")
+        }
+
+        lines.append("Analyze these entries together. Explain what they indicate, identify patterns, and suggest troubleshooting steps.")
+
+        return lines.joined(separator: "\n")
     }
 
-    static func askAI(about entry: LogEntry, using provider: AIProvider) {
-        let prompt = buildPrompt(for: entry)
+    static func copyPromptToClipboard(for entries: [LogEntry]) {
+        let prompt = buildPrompt(for: entries)
+        copyToClipboard(prompt)
+    }
+
+    static func askAI(about entries: [LogEntry], using provider: AIProvider) {
+        guard !entries.isEmpty else { return }
+        let prompt = buildPrompt(for: entries)
 
         if provider.supportsURLQuery {
-            // Perplexity supports URL query — open directly with prompt embedded
             let url = provider.url(withPrompt: prompt)
-            NSWorkspace.shared.open(url)
+            let urlString = url.absoluteString
+            if urlString.count > 2048 {
+                copyToClipboard(prompt)
+                NSWorkspace.shared.open(provider.baseURL)
+                showClipboardAlert(
+                    title: "Prompt Copied to Clipboard",
+                    message: "The prompt is too long for a URL. \(provider.rawValue) is opening in your browser.\n\nPress Cmd+V to paste your question."
+                )
+            } else {
+                NSWorkspace.shared.open(url)
+            }
         } else {
-            // Copy to clipboard and show instructions
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(prompt, forType: .string)
-
+            copyToClipboard(prompt)
             NSWorkspace.shared.open(provider.baseURL)
-
-            let alert = NSAlert()
-            alert.messageText = "Question Copied to Clipboard"
-            alert.informativeText = "\(provider.rawValue) is opening in your browser.\n\nPress Cmd+V to paste your question into the chat, then send it."
-            alert.alertStyle = .informational
-            alert.icon = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "Clipboard")
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
+            showClipboardAlert(
+                title: "Question Copied to Clipboard",
+                message: "\(provider.rawValue) is opening in your browser.\n\nPress Cmd+V to paste your question into the chat, then send it."
+            )
         }
+    }
+
+    // MARK: - Private Helpers
+
+    private static func copyToClipboard(_ string: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(string, forType: .string)
+    }
+
+    private static func showClipboardAlert(title: String, message: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.alertStyle = .informational
+        alert.icon = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "Clipboard")
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 }

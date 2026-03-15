@@ -22,6 +22,7 @@ struct HistoricalView: View {
                         discoveredSubsystems: viewModel.discoveredSubsystems
                     ) {
                         viewModel.filter = filterViewModel.filter
+                        viewModel.selectedEntries = []
                     }
                     .frame(minWidth: 280, maxWidth: 350)
                 }
@@ -29,12 +30,12 @@ struct HistoricalView: View {
                 HSplitView {
                     LogTableView(
                         entries: viewModel.displayEntries,
-                        selectedEntry: $viewModel.selectedEntry,
+                        selectedEntries: $viewModel.selectedEntries,
                         autoScroll: false
                     )
 
-                    if viewModel.selectedEntry != nil {
-                        LogDetailView(entry: viewModel.selectedEntry)
+                    if !viewModel.selectedEntries.isEmpty {
+                        LogDetailView(entries: viewModel.selectedEntries)
                     }
                 }
             }

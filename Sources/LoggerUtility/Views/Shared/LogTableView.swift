@@ -3,11 +3,11 @@ import AppKit
 
 struct LogTableView: NSViewRepresentable {
     let entries: [LogEntry]
-    @Binding var selectedEntry: LogEntry?
+    @Binding var selectedEntries: [LogEntry]
     var autoScroll: Bool = true
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(selectedEntry: $selectedEntry)
+        Coordinator(selectedEntries: $selectedEntries)
     }
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -22,7 +22,7 @@ struct LogTableView: NSViewRepresentable {
         tableView.rowHeight = Constants.RowHeight.standard
         tableView.allowsColumnReordering = true
         tableView.allowsColumnResizing = true
-        tableView.allowsMultipleSelection = false
+        tableView.allowsMultipleSelection = true
         tableView.intercellSpacing = NSSize(width: 8, height: 0)
 
         let columns: [(String, String, CGFloat)] = [
@@ -50,6 +50,7 @@ struct LogTableView: NSViewRepresentable {
 
         // Context menu
         let menu = NSMenu()
+        menu.delegate = context.coordinator
 
         let askAIItem = NSMenuItem(title: "Ask AI About This...", action: #selector(Coordinator.askAIAboutEntry(_:)), keyEquivalent: "")
         askAIItem.target = context.coordinator
@@ -84,12 +85,41 @@ struct LogTableView: NSViewRepresentable {
         let oldCount = coordinator.entries.count
         coordinator.entries = entries
 
+        // Sync programmatic selection clears back to NSTableView (Bug #2)
+        if selectedEntries.isEmpty && tableView.numberOfSelectedRows > 0 {
+            coordinator.isSuppressingSelectionChange = true
+            tableView.deselectAll(nil)
+            coordinator.isSuppressingSelectionChange = false
+        }
+
         let clipView = scrollView.contentView
         let contentHeight = tableView.frame.height
         let scrollOffset = clipView.bounds.origin.y + clipView.bounds.height
         let isAtBottom = contentHeight <= clipView.bounds.height || scrollOffset >= contentHeight - 50
 
+        // Save selected entry IDs to restore after reload (Bug #1)
+        let selectedIDs = Set(selectedEntries.map(\.id))
+
+        coordinator.isSuppressingSelectionChange = true
         tableView.reloadData()
+
+        // Restore selection by matching entry IDs in the new data
+        if !selectedIDs.isEmpty {
+            let indexSet = NSMutableIndexSet()
+            for (index, entry) in entries.enumerated() {
+                if selectedIDs.contains(entry.id) {
+                    indexSet.add(index)
+                }
+            }
+            if indexSet.count > 0 {
+                tableView.selectRowIndexes(indexSet as IndexSet, byExtendingSelection: false)
+            }
+        }
+        // If entries rotated out and selection is now empty, update the binding
+        if !selectedIDs.isEmpty && tableView.numberOfSelectedRows == 0 {
+            coordinator.selectedEntries.wrappedValue = []
+        }
+        coordinator.isSuppressingSelectionChange = false
 
         if autoScroll && isAtBottom && entries.count > oldCount && entries.count > 0 {
             tableView.scrollRowToVisible(entries.count - 1)
@@ -105,13 +135,15 @@ struct LogTableView: NSViewRepresentable {
         coordinator.entries = []
     }
 
-    final class Coordinator: NSObject, NSTableViewDelegate, NSTableViewDataSource {
-        var selectedEntry: Binding<LogEntry?>
+    @MainActor
+    final class Coordinator: NSObject, NSTableViewDelegate, NSTableViewDataSource, NSMenuDelegate {
+        var selectedEntries: Binding<[LogEntry]>
         var entries: [LogEntry] = []
         weak var tableView: NSTableView?
+        var isSuppressingSelectionChange = false
 
-        init(selectedEntry: Binding<LogEntry?>) {
-            self.selectedEntry = selectedEntry
+        init(selectedEntries: Binding<[LogEntry]>) {
+            self.selectedEntries = selectedEntries
         }
 
         func numberOfRows(in tableView: NSTableView) -> Int {
@@ -169,53 +201,89 @@ struct LogTableView: NSViewRepresentable {
             Constants.RowHeight.standard
         }
 
-        // MARK: - Context Menu Actions
+        // MARK: - Selection
 
-        private func entryForMenu() -> LogEntry? {
-            guard let tableView = tableView else { return nil }
-            let row = tableView.clickedRow >= 0 ? tableView.clickedRow : tableView.selectedRow
-            guard row >= 0 && row < entries.count else { return nil }
-            return entries[row]
+        private func entriesForMenu() -> [LogEntry] {
+            guard let tableView = tableView else { return [] }
+            let clickedRow = tableView.clickedRow
+
+            if clickedRow >= 0 && clickedRow < entries.count {
+                // If clicked row is part of the current selection, use full selection
+                if tableView.selectedRowIndexes.contains(clickedRow) {
+                    return tableView.selectedRowIndexes.compactMap { idx in
+                        idx < entries.count ? entries[idx] : nil
+                    }
+                }
+                // Otherwise just the clicked row
+                return [entries[clickedRow]]
+            }
+
+            // Fallback to current selection
+            return tableView.selectedRowIndexes.compactMap { idx in
+                idx < entries.count ? entries[idx] : nil
+            }
         }
 
-        @objc func askAIAboutEntry(_ sender: Any?) {
-            guard let entry = entryForMenu() else { return }
-            Task { @MainActor in
-                AIPromptService.askAI(about: entry, using: AIPromptService.preferredProvider)
+        // MARK: - NSMenuDelegate
+
+        func menuNeedsUpdate(_ menu: NSMenu) {
+            let selected = entriesForMenu()
+            let count = selected.count
+
+            if let askItem = menu.items.first(where: { $0.action == #selector(askAIAboutEntry(_:)) }) {
+                askItem.title = count > 1
+                    ? "Ask AI About Selected Logs (\(count))"
+                    : "Ask AI About This..."
             }
+            if let copyPromptItem = menu.items.first(where: { $0.action == #selector(copyAIPrompt(_:)) }) {
+                copyPromptItem.title = count > 1
+                    ? "Copy AI Prompt (\(count) entries)"
+                    : "Copy AI Prompt"
+            }
+        }
+
+        // MARK: - Context Menu Actions
+
+        @objc func askAIAboutEntry(_ sender: Any?) {
+            let selected = entriesForMenu()
+            guard !selected.isEmpty else { return }
+            AIPromptService.askAI(about: selected, using: AIPromptService.preferredProvider)
         }
 
         @objc func copyAIPrompt(_ sender: Any?) {
-            guard let entry = entryForMenu() else { return }
-            Task { @MainActor in
-                AIPromptService.copyPromptToClipboard(for: entry)
-            }
+            let selected = entriesForMenu()
+            guard !selected.isEmpty else { return }
+            AIPromptService.copyPromptToClipboard(for: selected)
         }
 
         @objc func copyMessage(_ sender: Any?) {
-            guard let entry = entryForMenu() else { return }
+            let selected = entriesForMenu()
+            guard !selected.isEmpty else { return }
+            let text = selected.map(\.eventMessage).joined(separator: "\n")
             NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(entry.eventMessage, forType: .string)
+            NSPasteboard.general.setString(text, forType: .string)
         }
 
         @objc func copyRow(_ sender: Any?) {
-            guard let entry = entryForMenu() else { return }
-            let row = "\(DateFormatting.fullDisplayString(from: entry.timestamp))\t" +
-                      "\(entry.logLevel.rawValue)\t" +
-                      "\(entry.processName)\t\(entry.processID)\t" +
-                      "\(entry.subsystem)\t\(entry.category)\t" +
-                      "\(entry.senderName)\t\(entry.eventMessage)"
+            let selected = entriesForMenu()
+            guard !selected.isEmpty else { return }
+            let text = selected.map { entry in
+                "\(DateFormatting.fullDisplayString(from: entry.timestamp))\t" +
+                "\(entry.logLevel.rawValue)\t" +
+                "\(entry.processName)\t\(entry.processID)\t" +
+                "\(entry.subsystem)\t\(entry.category)\t" +
+                "\(entry.senderName)\t\(entry.eventMessage)"
+            }.joined(separator: "\n")
             NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(row, forType: .string)
+            NSPasteboard.general.setString(text, forType: .string)
         }
 
         func tableViewSelectionDidChange(_ notification: Notification) {
+            guard !isSuppressingSelectionChange else { return }
             guard let tableView = notification.object as? NSTableView else { return }
-            let row = tableView.selectedRow
-            if row >= 0 && row < entries.count {
-                selectedEntry.wrappedValue = entries[row]
-            } else {
-                selectedEntry.wrappedValue = nil
+            let indexes = tableView.selectedRowIndexes
+            selectedEntries.wrappedValue = indexes.compactMap { idx in
+                idx < entries.count ? entries[idx] : nil
             }
         }
     }

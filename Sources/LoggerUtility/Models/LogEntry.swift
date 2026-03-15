@@ -1,6 +1,10 @@
 import Foundation
 
-struct LogEntry: Identifiable, Equatable {
+struct LogEntry: Identifiable, Equatable, Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
     let id: UUID
     let timestamp: Date
     let processID: Int

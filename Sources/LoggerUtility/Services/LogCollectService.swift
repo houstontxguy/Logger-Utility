@@ -16,7 +16,7 @@ final class LogCollectService: ObservableObject {
         )
 
         do {
-            let result = try await Process.runAsync(arguments: args)
+            let result = try await PrivilegedProcess.run(arguments: args)
             isRunning = false
             if result.exitCode != 0 {
                 errorMessage = result.stderr.isEmpty ? "log collect failed with exit code \(result.exitCode)" : result.stderr

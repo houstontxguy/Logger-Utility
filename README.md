@@ -41,7 +41,11 @@ Logger Utility runs `log` commands as the current user. If you are running as a 
 - **`.logarchive` export will fail** — `log collect` requires administrator privileges
 - **`<private>` redactions** in log messages are controlled at the macOS subsystem level and cannot be removed by any log viewer — this requires a [configuration profile](https://developer.apple.com/documentation/os/logging/generating_log_messages_from_your_code#3665948) (`com.apple.system.logging` with `Enable-Private-Data` set to `true`)
 
-The app displays a warning banner when running as a standard user. For best results, **run Logger Utility from an admin account** and grant Full Disk Access.
+The app displays warning banners at launch when it detects issues:
+- **No Full Disk Access** — banner with an "Open System Settings" button that takes you directly to the Privacy & Security pane
+- **Standard user** — banner noting limited visibility and export restrictions
+
+For best results, **run Logger Utility from an admin account** and grant Full Disk Access.
 
 ### Build from source
 

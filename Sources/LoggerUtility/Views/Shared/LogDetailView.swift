@@ -119,26 +119,26 @@ struct LogDetailView: View {
     private func askAISection(entries: [LogEntry]) -> some View {
         GroupBox("Ask AI") {
             VStack(spacing: 6) {
-                Menu {
-                    ForEach(AIProvider.allCases) { provider in
-                        Button(provider.rawValue) {
-                            AIPromptService.preferredProvider = provider
-                            AIPromptService.askAI(about: entries, using: provider)
-                        }
-                    }
+                Button {
+                    AIPromptService.askAI(about: entries, using: preferredProvider)
                 } label: {
-                    Label("Ask AI (\(preferredProvider.rawValue))", systemImage: "brain")
+                    Label("Ask \(preferredProvider.rawValue)", systemImage: "brain")
                         .frame(maxWidth: .infinity)
                 }
-                .menuStyle(.borderedButton)
+                .buttonStyle(.borderedProminent)
 
                 HStack(spacing: 6) {
-                    Button {
-                        AIPromptService.askAI(about: entries, using: preferredProvider)
+                    Menu {
+                        ForEach(AIProvider.allCases) { provider in
+                            Button(provider.rawValue) {
+                                AIPromptService.preferredProvider = provider
+                            }
+                        }
                     } label: {
-                        Label("Open in Browser", systemImage: "arrow.up.right.square")
+                        Label("Change AI Provider", systemImage: "arrow.triangle.2.circlepath")
                             .frame(maxWidth: .infinity)
                     }
+                    .menuStyle(.borderedButton)
 
                     Button {
                         AIPromptService.copyPromptToClipboard(for: entries)
@@ -154,8 +154,8 @@ struct LogDetailView: View {
                         Label(showCopiedFeedback ? "Copied!" : "Copy Prompt", systemImage: showCopiedFeedback ? "checkmark" : "doc.on.doc")
                             .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
             }
         }
     }

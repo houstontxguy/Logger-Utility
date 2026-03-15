@@ -118,7 +118,7 @@ struct LogDetailView: View {
 
     private func askAISection(entries: [LogEntry]) -> some View {
         GroupBox("Ask AI") {
-            HStack(spacing: 8) {
+            VStack(spacing: 6) {
                 Menu {
                     ForEach(AIProvider.allCases) { provider in
                         Button(provider.rawValue) {
@@ -128,30 +128,35 @@ struct LogDetailView: View {
                     }
                 } label: {
                     Label("Ask AI (\(preferredProvider.rawValue))", systemImage: "brain")
+                        .frame(maxWidth: .infinity)
                 }
                 .menuStyle(.borderedButton)
 
-                Button {
-                    AIPromptService.askAI(about: entries, using: preferredProvider)
-                } label: {
-                    Label("Open", systemImage: "arrow.up.right.square")
-                }
-
-                Button {
-                    AIPromptService.copyPromptToClipboard(for: entries)
-                    showCopiedFeedback = true
-                    feedbackTask?.cancel()
-                    feedbackTask = Task { @MainActor in
-                        try? await Task.sleep(nanoseconds: 1_500_000_000)
-                        if !Task.isCancelled {
-                            showCopiedFeedback = false
-                        }
+                HStack(spacing: 6) {
+                    Button {
+                        AIPromptService.askAI(about: entries, using: preferredProvider)
+                    } label: {
+                        Label("Open in Browser", systemImage: "arrow.up.right.square")
+                            .frame(maxWidth: .infinity)
                     }
-                } label: {
-                    Label(showCopiedFeedback ? "Copied!" : "Copy Prompt", systemImage: showCopiedFeedback ? "checkmark" : "doc.on.doc")
+
+                    Button {
+                        AIPromptService.copyPromptToClipboard(for: entries)
+                        showCopiedFeedback = true
+                        feedbackTask?.cancel()
+                        feedbackTask = Task { @MainActor in
+                            try? await Task.sleep(nanoseconds: 1_500_000_000)
+                            if !Task.isCancelled {
+                                showCopiedFeedback = false
+                            }
+                        }
+                    } label: {
+                        Label(showCopiedFeedback ? "Copied!" : "Copy Prompt", systemImage: showCopiedFeedback ? "checkmark" : "doc.on.doc")
+                            .frame(maxWidth: .infinity)
+                    }
                 }
+                .buttonStyle(.bordered)
             }
-            .buttonStyle(.bordered)
         }
     }
 

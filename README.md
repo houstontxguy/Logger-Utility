@@ -39,13 +39,32 @@ Logger Utility runs `log` commands as the current user. If you are running as a 
 
 - **Some log entries may be hidden** — certain system-level logs are only visible to admin users
 - **`.logarchive` export will fail** — `log collect` requires administrator privileges
-- **`<private>` redactions** in log messages are controlled at the macOS subsystem level and cannot be removed by any log viewer — this requires a [configuration profile](https://developer.apple.com/documentation/os/logging/generating_log_messages_from_your_code#3665948) (`com.apple.system.logging` with `Enable-Private-Data` set to `true`)
+- **`<private>` redactions** in log messages are controlled at the macOS subsystem level and cannot be removed by any log viewer — see [Removing `<private>` redactions](#removing-private-redactions) below
 
 The app displays warning banners at launch when it detects issues:
 - **No Full Disk Access** — banner with an "Open System Settings" button that takes you directly to the Privacy & Security pane
 - **Standard user** — banner noting limited visibility and export restrictions
 
 For best results, **run Logger Utility from an admin account** and grant Full Disk Access.
+
+### Removing `<private>` redactions
+
+Many macOS log messages redact sensitive data, showing `<private>` instead of actual values. This is an OS-level privacy feature — no log viewer can bypass it. To reveal this data for troubleshooting, you need to install a configuration profile.
+
+A ready-to-use profile is included in this repo: [`Resources/EnablePrivateLogging.mobileconfig`](Resources/EnablePrivateLogging.mobileconfig)
+
+**To install manually (single Mac):**
+1. Download or locate `EnablePrivateLogging.mobileconfig`
+2. Double-click the file — macOS will open **System Settings > Privacy & Security > Profiles**
+3. Click **Install** and enter your admin password
+4. **Restart the Mac** for the change to take effect
+5. Log messages will now show actual values instead of `<private>`
+
+**To deploy via MDM:**
+Upload the profile to your MDM solution (Jamf, Mosyle, Kandji, etc.) and scope it to the target Macs. No restart prompt is required when deployed via MDM, but a restart is still recommended for full effect.
+
+**To remove:**
+Go to **System Settings > Privacy & Security > Profiles**, select "Enable Private Log Data", and click **Remove**. This is a troubleshooting tool — remove it when you're done to restore the default privacy behavior.
 
 ### Build from source
 

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>PayloadDisplayName</key>
+			<string>System Logging</string>
+			<key>PayloadIdentifier</key>
+			<string>com.apple.system.logging.1</string>
+			<key>PayloadType</key>
+			<string>com.apple.system.logging</string>
+			<key>PayloadUUID</key>
+			<string>A1B2C3D4-E5F6-7890-ABCD-EF1234567890</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>System</key>
+			<dict>
+				<key>Enable-Private-Data</key>
+				<true/>
+			</dict>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Enables private data logging in macOS unified logs. When installed, log messages that normally show &lt;private&gt; will display their actual values. Remove this profile when troubleshooting is complete.</string>
+	<key>PayloadDisplayName</key>
+	<string>Enable Private Log Data</string>
+	<key>PayloadIdentifier</key>
+	<string>com.loggerutility.private-logging</string>
+	<key>PayloadOrganization</key>
+	<string>Logger Utility</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>F1E2D3C4-B5A6-7890-FEDC-BA0987654321</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>

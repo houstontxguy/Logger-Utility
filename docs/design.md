@@ -294,6 +294,17 @@ The subsystem dropdown includes these common macOS subsystems:
 
 ---
 
+## Permissions & Standard Users
+
+The app runs `log` commands as the current user. A warning banner is shown at launch when running as a standard (non-admin) user, explaining:
+- Some system-level log entries may not be visible
+- `.logarchive` export (`log collect`) requires admin privileges and will fail
+- `<private>` redactions are controlled at the macOS subsystem level via configuration profiles, not user privilege
+
+For full visibility, run from an admin account with Full Disk Access granted.
+
+---
+
 ## Technical Notes
 
 - **No sandbox** — `log stream`/`log show` require full system log access

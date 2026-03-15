@@ -33,6 +33,16 @@ The app is signed with a Developer ID certificate. On first launch, macOS may pr
 
 For full log visibility, grant **Full Disk Access** to Logger Utility in **System Settings > Privacy & Security > Full Disk Access**.
 
+### Permissions note
+
+Logger Utility runs `log` commands as the current user. If you are running as a **standard (non-admin) user**, be aware of the following:
+
+- **Some log entries may be hidden** — certain system-level logs are only visible to admin users
+- **`.logarchive` export will fail** — `log collect` requires administrator privileges
+- **`<private>` redactions** in log messages are controlled at the macOS subsystem level and cannot be removed by any log viewer — this requires a [configuration profile](https://developer.apple.com/documentation/os/logging/generating_log_messages_from_your_code#3665948) (`com.apple.system.logging` with `Enable-Private-Data` set to `true`)
+
+The app displays a warning banner when running as a standard user. For best results, **run Logger Utility from an admin account** and grant Full Disk Access.
+
 ### Build from source
 
 ```bash

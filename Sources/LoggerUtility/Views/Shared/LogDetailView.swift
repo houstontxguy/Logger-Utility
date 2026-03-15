@@ -135,7 +135,7 @@ struct LogDetailView: View {
                             }
                         }
                     } label: {
-                        Label("Change AI Provider", systemImage: "arrow.triangle.2.circlepath")
+                        Label("Change AI", systemImage: "arrow.triangle.2.circlepath")
                             .frame(maxWidth: .infinity)
                     }
                     .menuStyle(.borderedButton)

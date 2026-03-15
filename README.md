@@ -2,6 +2,8 @@
 
 A native macOS app for viewing unified system logs. Built with SwiftUI, it wraps the `log` CLI tool to provide real-time streaming, historical queries, filtering, and export — all in a performant GUI designed for Mac technicians.
 
+![Logger Utility Demo](docs/demo.gif)
+
 ## Features
 
 - **Real-time log streaming** — Live view of system logs via `log stream` with pause/resume and auto-scroll

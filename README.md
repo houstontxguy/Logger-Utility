@@ -1,26 +1,25 @@
 # Logger Utility
 
-A native macOS app for viewing unified system logs. Built with SwiftUI, it wraps the `log` CLI tool to provide real-time streaming, historical queries, filtering, and export — all in a performant GUI designed for Mac technicians.
-
-### Historical query with detail inspector
-![Historical query with log detail panel](docs/screenshot-historical.png)
-
-### Error entry selected with full detail view
-![Error entry selected showing detail panel](docs/screenshot-error-detail.png)
+A native macOS app for viewing and analyzing unified system logs. Select any log entry, click "Ask AI," and get an instant explanation from Perplexity, ChatGPT, Claude, Gemini, or Copilot — no API keys, no cost. Built with a visual predicate builder, real-time streaming, and an NSTableView that handles 100K+ entries.
 
 ### Right-click context menu with Ask AI
 ![Right-click context menu showing Ask AI option](docs/screenshot-context-menu.png)
 
+### Error entry selected with full detail view
+![Error entry selected showing detail panel](docs/screenshot-error-detail.png)
+
+### Historical query with detail inspector
+![Historical query with log detail panel](docs/screenshot-historical.png)
+
 ## Features
 
+- **One-click AI lookup** — Right-click any log entry (or select multiple) and send it to Perplexity, ChatGPT, Claude, Gemini, or Copilot. The app builds a contextual prompt with the log message, process, subsystem, macOS version, and more — copies it to your clipboard and opens the browser. No API keys, no accounts, no cost.
 - **Real-time log streaming** — Live view of system logs via `log stream` with pause/resume and auto-scroll
 - **Historical queries** — Search past logs with arbitrary date ranges and quick shortcuts (5m, 15m, 1h, 24h)
-- **Advanced filtering** — Filter by process, subsystem, category, sender, log level, and custom predicates
-- **Visual predicate builder** — Build complex `log` predicates with a point-and-click UI (supports ==, !=, CONTAINS, BEGINSWITH, ENDSWITH, LIKE, MATCHES)
-- **Dynamic subsystem discovery** — Subsystem picker auto-populates from query results, sorted by frequency with counts
-- **Ask AI** — Right-click any log entry to get an AI-generated explanation via ChatGPT, Claude, Gemini, Perplexity, or Copilot (no API keys needed — copies a prompt to your clipboard and opens the browser)
+- **Visual predicate builder** — Build complex `log` predicates with a point-and-click UI instead of memorizing syntax (supports ==, !=, CONTAINS, BEGINSWITH, ENDSWITH, LIKE, MATCHES)
+- **Advanced filtering** — Filter by process, subsystem, category, sender, and log level
 - **High-performance table** — NSTableView handles 100K+ log entries with fixed row heights and cell reuse
-- **Log detail inspector** — Side panel showing all fields for the selected log entry, with Ask AI and Copy Prompt buttons
+- **Log detail inspector** — Side panel showing all fields for the selected entry, with Ask AI and Copy Prompt buttons
 - **Export** — Save logs as CSV, plain text, or .logarchive
 - **Keyboard shortcuts** — Cmd+K (clear), Cmd+F (search), Cmd+E (export), Cmd+Shift+A (Ask AI)
 
